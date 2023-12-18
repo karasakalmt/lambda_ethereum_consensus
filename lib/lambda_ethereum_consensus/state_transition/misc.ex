@@ -269,4 +269,52 @@ defmodule LambdaEthereumConsensus.StateTransition.Misc do
     flag = :math.pow(2, flag_index) |> round
     bor(flags, flag)
   end
+
+  @doc """
+  Generates merkle proof
+  """
+  @spec get_merkle_proof(
+          list(SszTypes.bytes32())
+        ) :: SszTypes.root()
+  def get_merkle_proof(input_arr) do
+
+  end
+
+  def get_merkle_root(input_arr) do
+    one_level_up(input_arr)
+    |> get_merkle_root()
+  end
+
+  defp get_merkle_root([result| []]), do: result
+
+  defp xor_bitstring(a, b) do
+    _xor_bitstring(a, b, <<>>)
+  end
+
+  defp _xor_bitstring(<<>>, <<>>, acc) do
+    acc
+  end
+
+  defp _xor_bitstring(<<a::8, rema::bitsring>>, <<b::8, remb::bitsring>>, acc) do
+    _xor_bitstring(rema, remb, acc <> bxor(a, b))
+  end
+
+  defp pair_hash(a, b) do
+    :crypto.hash(:sha256, xor_bitstring(:crypto.hash(:sha256, a), :crypto.hash(:sha256, b)))
+  end
+
+  defp one_level_up(input_arr) do
+    input_arr = if rem(length(input_arr), 2), do: input_arr ++ [0]
+    result = input_arr
+      |>Enum.chunk_every(2)
+      |> _one_level_up(input_arr, [])
+  end
+
+  defp _one_level_up([], acc), do: acc
+  defp _one_level_up([pair | rem_arr], acc) do
+    [a | [b | _]] = pair
+    acc ++ pair_hash(a, b)
+    _one_level_up(rem_arr, acc)
+  end
+
 end
